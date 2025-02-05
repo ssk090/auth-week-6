@@ -8,6 +8,28 @@ const users = [];
 
 const JWT_SECRET = "shiva";
 
+function auth(req, res, next) {
+    const token = req.headers.authorization;
+
+    if (token) {
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) {
+                res.send({
+                    message: "Unauthorized"
+                })
+            } else {
+                req.user = decoded;
+                next();
+            }
+        });
+
+    } else {
+        res.send({
+            message: "Unauthorized"
+        })
+    }
+}
+
 app.post('/signup', (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -31,7 +53,7 @@ app.post('/signin', (req, res) => {
 
     if (user) {
         const token = jwt.sign({
-            username: user.username
+            username: user.username // { "username": "shiva"}
         }, JWT_SECRET)
         user.token = token
         res.json({
@@ -45,21 +67,12 @@ app.post('/signin', (req, res) => {
     }
 })
 
-app.get('/me', (req, res) => {
-    const token = req.headers.authorization;
+app.get('/me', auth, (req, res) => {
+    const user = req.user
 
-    const decodedInformation = jwt.verify(token, JWT_SECRET)
-    const username = decodedInformation.username;
-
-    if (username) {
-        res.json({
-            username
-        })
-    } else {
-        res.status(401).send({
-            message: "Unauthorized"
-        })
-    }
+    res.send({
+        username: user.username
+    })
 })
 
 app.listen(3000, () => {
